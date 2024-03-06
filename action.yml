@@ -1,0 +1,41 @@
+name: Build and Deploy
+description: Build and deploy a static React webapp to GitHub Pages
+inputs:
+  repository:
+    description: 'The repository name'
+    required: true
+  branch:
+    description: 'The branch name'
+    required: true
+  path:
+    description: 'The path to the React app'
+    required: true
+runs:
+  using: 'node20'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repository }}
+        ref: ${{ inputs.branch }}
+        path: ${{ inputs.path }}
+    - name: Install dependencies
+      shell: bash
+      run: npm ci 
+    - name: Build app
+      shell: bash
+      run: npm run build
+    - name: Deploy to GitHub Pages
+      shell: bash
+      run: |
+        mv build ${{ inputs.path }}/
+        cd ${{ inputs.path }}
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git remote add gh-pages origin +${{ github.repository_url }}
+        git fetch origin +gh-pages:refs/heads/gh-pages
+        git checkout gh-pages
+        git rm -rf .
+        git add -A
+        git commit -m "Update gh-pages"
+        git push -q origin gh-pages
